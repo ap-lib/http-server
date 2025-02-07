@@ -4,6 +4,8 @@
   "type": "library",
   "homepage": "https://github.com/ap-lib/http-server",
   "license": "MIT",
+  "minimum-stability": "dev",
+  "prefer-stable": true,
   "authors": [
     {
       "name": "Anton Panfilov"
