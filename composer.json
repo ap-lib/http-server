@@ -21,8 +21,8 @@
   },
   "require": {
     "php": "^8.3",
-    "ap-lib/logger": "2.*.*",
-    "ap-lib/routing": "2.*.*"
+    "ap-lib/logger": "dev-main",
+    "ap-lib/routing": "dev-main"
   },
   "require-dev": {
     "phpunit/phpunit": "10.5.*"
