@@ -84,7 +84,7 @@ readonly class HttpServer
 
         try {
             try {
-                $res     = $this->routing->getRoute(Method::GET, $this->path);
+                $res     = $this->routing->getRoute($this->method, $this->path);
                 $request = $this->makeRequest($res->params);
                 return $res->endpoint->run(
                     $request,
