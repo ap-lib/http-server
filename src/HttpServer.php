@@ -12,6 +12,8 @@ use AP\Routing\Response\Handler\BaseResponseHandler;
 use AP\Routing\Response\Handler\ResponseHandlerInterface;
 use AP\Routing\Response\Response;
 use AP\Routing\Routing\Endpoint;
+use AP\Routing\Routing\Endpoint\ParseMiddleware\ByMethodAttributes;
+use AP\Routing\Routing\Endpoint\ParseMiddleware\ParseMiddlewareInterface;
 use AP\Routing\Routing\Exception\NotFound;
 use AP\Routing\Routing\Routing\Hashmap\Hashmap;
 use AP\Routing\Routing\Routing\RoutingInterface;
@@ -35,6 +37,7 @@ readonly class HttpServer
      * @param RoutingInterface|null $routing Optional routing instance, defaults to a Hashmap if null
      * @param ServerInterface|null $webServer Optional web server handler, defaults to Nginx if null
      * @param ResponseHandlerInterface|null $responseHandler Optional request handler interface
+     * @param ParseMiddlewareInterface|null $middlewareParser Optional additional middleware parsing
      * @param Endpoint|null $notFoundEndpoint Custom endpoint for handling 404 Not Found responses
      * @param Endpoint|null $internalServerErrorEndpoint Custom endpoint for handling 500 Internal Server Error responses
      * @param bool $earlyFinishRequest Whether to close the client connection before executing post-response tasks
@@ -46,6 +49,7 @@ readonly class HttpServer
         ?RoutingInterface                   $routing = null,
         ?ServerInterface                    $webServer = null,
         protected ?ResponseHandlerInterface $responseHandler = new BaseResponseHandler(),
+        protected ?ParseMiddlewareInterface $middlewareParser = new ByMethodAttributes(),
         protected ?Endpoint                 $notFoundEndpoint = null,
         protected ?Endpoint                 $internalServerErrorEndpoint = null,
         protected bool                      $earlyFinishRequest = true,
@@ -88,7 +92,8 @@ readonly class HttpServer
                 $request = $this->makeRequest($res->params);
                 return $res->endpoint->run(
                     $request,
-                    $this->responseHandler
+                    $this->responseHandler,
+                    $this->middlewareParser,
                 );
             } catch (NotFound) {
                 $request = is_null($request) ? $this->makeRequest() : $request;
