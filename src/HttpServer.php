@@ -2,10 +2,10 @@
 
 namespace AP\HttpServer;
 
-use AP\Cache\Persistent\PersistentCacheInterface;
 use AP\HttpServer\BaseServer\Nginx;
 use AP\HttpServer\BaseServer\ServerInterface;
 use AP\Logger\Log;
+use AP\Routing\Cache\RoutingCacheInterface;
 use AP\Routing\Request\Method;
 use AP\Routing\Request\Request;
 use AP\Routing\Response\Handler\BaseResponseHandler;
@@ -33,7 +33,7 @@ readonly class HttpServer
     /**
      * Initializes the HTTP server with routing, request handling, and execution components
      *
-     * @param PersistentCacheInterface|array $indexCache The cached routing index, either as an array or a persistent cache interface
+     * @param RoutingCacheInterface|array $indexCache The cached routing index, either as an array or a routing cache interface
      * @param RoutingInterface|null $routing Optional routing instance, defaults to a Hashmap if null
      * @param ServerInterface|null $webServer Optional web server handler, defaults to Nginx if null
      * @param ResponseHandlerInterface|null $responseHandler Optional request handler interface
@@ -45,7 +45,7 @@ readonly class HttpServer
      *      Set to `false` if debugging is necessary, especially when logging errors directly to the console before the request is finished.
      */
     public function __construct(
-        PersistentCacheInterface|array      $indexCache,
+        RoutingCacheInterface|array         $indexCache,
         ?RoutingInterface                   $routing = null,
         ?ServerInterface                    $webServer = null,
         protected ?ResponseHandlerInterface $responseHandler = new BaseResponseHandler(),

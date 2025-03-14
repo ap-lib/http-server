@@ -24,7 +24,8 @@
   "require": {
     "php": "^8.3",
     "ap-lib/logger": "dev-main",
-    "ap-lib/routing": "dev-main"
+    "ap-lib/routing": "dev-main",
+    "ap-lib/routing-cache": "dev-main"
   },
   "require-dev": {
     "phpunit/phpunit": "10.5.*"
