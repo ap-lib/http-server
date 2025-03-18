@@ -43,6 +43,9 @@ readonly class HttpServer
      * @param bool $earlyFinishRequest Whether to close the client connection before executing post-response tasks
      *      Set to `true` (default) for improved performance by allowing background processing after the client connection is closed.
      *      Set to `false` if debugging is necessary, especially when logging errors directly to the console before the request is finished.
+     * @param array<string,mixed>|true|null $cors_allowed null - turned off
+     *                                      true - allow for all
+     *                                      hashmap array - allows only for keys of this array
      */
     public function __construct(
         RoutingCacheInterface|array         $indexCache,
@@ -53,6 +56,7 @@ readonly class HttpServer
         protected ?Endpoint                 $notFoundEndpoint = null,
         protected ?Endpoint                 $internalServerErrorEndpoint = null,
         protected bool                      $earlyFinishRequest = true,
+        protected array|true|null           $cors_allowed = null,
     )
     {
         $this->routing   = is_null($routing) ? new Hashmap() : $routing;
@@ -75,6 +79,27 @@ readonly class HttpServer
         }
     }
 
+    protected function wrapResponse(Request $request, Response $response): Response
+    {
+        if (
+            isset($request->headers['Origin'])
+            && (
+                $this->cors_allowed === true ||
+                (
+                    is_array($this->cors_allowed)
+                    && isset($this->cors_allowed[$request->headers['Origin']])
+                )
+            )
+        ) {
+            $response
+                ->addHeader("Access-Control-Allow-Origin", $request->headers['Origin'])
+                ->addHeader("Access-Control-Allow-Methods", "*")
+                ->addHeader("Access-Control-Allow-Headers", "*")
+                ->addHeader("Access-Control-Allow-Credentials", "true");
+        }
+        return $response;
+    }
+
     /**
      * Handles the incoming HTTP request, routes it, and executes the corresponding endpoint
      *
@@ -86,23 +111,41 @@ readonly class HttpServer
         // as the request→params is read-only and path parameters are unknown beforehand.
         $request = null;
 
+        if (!empty($this->cors_allowed) && $this->method == Method::OPTIONS) {
+            return $this->wrapResponse(
+                $this->makeRequest(),
+                new Response()
+            );
+        }
+
         try {
             try {
                 $res     = $this->routing->getRoute($this->method, $this->path);
                 $request = $this->makeRequest($res->params);
-                return $res->endpoint->run(
+                return $this->wrapResponse(
                     $request,
-                    $this->responseHandler,
-                    $this->middlewareParser,
+                    $res->endpoint->run(
+                        $request,
+                        $this->responseHandler,
+                        $this->middlewareParser,
+                    )
                 );
             } catch (NotFound) {
                 $request = is_null($request) ? $this->makeRequest() : $request;
-                return $this->notFound($request);
+                return $this->wrapResponse(
+                    $request,
+                    $this->notFound($request)
+                );
             }
         } catch (Throwable $e) {
-            return $this->internalServerError(
-                is_null($request) ? $this->makeRequest() : $request,
-                $e
+            $request = is_null($request) ? $this->makeRequest() : $request;
+
+            return $this->wrapResponse(
+                $request,
+                $this->internalServerError(
+                    $request,
+                    $e
+                )
             );
         }
     }
