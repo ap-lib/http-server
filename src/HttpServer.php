@@ -244,6 +244,7 @@ readonly class HttpServer
             files: $this->webServer->parseFiles(),
             body: $this->webServer->parseRequestBody(),
             params: $params,
+            ip: $this->webServer->parseRequestIP(),
         );
     }
 }
