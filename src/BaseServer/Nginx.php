@@ -66,4 +66,15 @@ class Nginx implements ServerInterface
             );
         }
     }
+
+    public function parseRequestIP(): string
+    {
+        if (!isset($_SERVER['REMOTE_ADDR'])) {
+            throw new RuntimeException("`parseMethod` error: _SERVER['REMOTE_ADDR'] is required");
+        }
+        if (!filter_var($_SERVER['REMOTE_ADDR'], FILTER_VALIDATE_IP)) {
+            throw new RuntimeException("_SERVER['REMOTE_ADDR'] invalid ip");
+        }
+        return $_SERVER['REMOTE_ADDR'];
+    }
 }

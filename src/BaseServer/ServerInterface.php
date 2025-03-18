@@ -22,6 +22,8 @@ interface ServerInterface
 
     public function parseRequestBody(): string;
 
+    public function parseRequestIP(): string;
+
     /**
      * Flushes all response data to the client and finishes the request.
      * This allows for time-consuming tasks to be performed without leaving the connection to the client open.
