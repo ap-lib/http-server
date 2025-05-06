@@ -13,7 +13,7 @@ readonly class Nginx implements ServerInterface
      * @param bool $use_proxy_header Whether to use proxy headers
      * @param string $proxy_header The name of the header to trust
      * @param array|true $trusted_proxies A list of IPs or CIDRs to trust as proxies
-     *                                    true - allowed all
+     *                                    true - for allowed all
      */
     public function __construct(
         public bool       $use_proxy_header = false,
