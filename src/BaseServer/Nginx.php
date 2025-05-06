@@ -7,8 +7,22 @@ use AP\Logger\Log;
 use AP\Routing\Request\Method;
 use RuntimeException;
 
-class Nginx implements ServerInterface
+readonly class Nginx implements ServerInterface
 {
+    /**
+     * @param bool $use_proxy_header Whether to use proxy headers
+     * @param string $proxy_header The name of the header to trust
+     * @param array|true $trusted_proxies A list of IPs or CIDRs to trust as proxies
+     *                   true - trust all, no recommend
+     */
+    public function __construct(
+        public bool       $use_proxy_header = false,
+        public string     $proxy_header = 'X-Forwarded-For',
+        public array|true $trusted_proxies = [],
+    )
+    {
+    }
+
     public function parseHeaders(): array
     {
         return getallheaders();
@@ -75,6 +89,61 @@ class Nginx implements ServerInterface
         if (!filter_var($_SERVER['REMOTE_ADDR'], FILTER_VALIDATE_IP)) {
             throw new RuntimeException("_SERVER['REMOTE_ADDR'] invalid ip");
         }
-        return $_SERVER['REMOTE_ADDR'];
+
+        $ip = $_SERVER['REMOTE_ADDR'];
+
+        if (
+            $this->use_proxy_header &&
+            isset($_SERVER[$this->proxy_header]) &&
+            $this->isTrustedProxy($ip)
+        ) {
+            $proxy_ips = explode(
+                ',',
+                $_SERVER[$this->proxy_header]
+            );
+
+            foreach ($proxy_ips as $proxy_ip) {
+                $proxy_ip = trim($proxy_ip);
+                if (filter_var($proxy_ip, FILTER_VALIDATE_IP)) {
+                    $ip = $proxy_ip;
+                    break;
+                }
+            }
+        }
+
+        return $ip;
+    }
+
+    /**
+     * Determine whether the given IP is in the list of trusted proxies.
+     */
+    private function isTrustedProxy(string $ip): bool
+    {
+        if ($this->trusted_proxies === true) {
+            return true;
+        }
+        foreach ($this->trusted_proxies as $proxy) {
+            if ($this->ipInRange($ip, $proxy)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check if an IP is within a given IP/CIDR range.
+     */
+    private function ipInRange(string $ip, string $range): bool
+    {
+        if (strpos($range, '/') === false) {
+            return $ip === $range;
+        }
+
+        [$subnet, $bits] = explode('/', $range);
+        $ip_long     = ip2long($ip);
+        $subnet_long = ip2long($subnet);
+        $mask        = ~((1 << (32 - $bits)) - 1);
+
+        return ($ip_long & $mask) === ($subnet_long & $mask);
     }
 }
