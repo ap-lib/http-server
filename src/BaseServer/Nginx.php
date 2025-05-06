@@ -89,19 +89,16 @@ readonly class Nginx implements ServerInterface
         if (!filter_var($_SERVER['REMOTE_ADDR'], FILTER_VALIDATE_IP)) {
             throw new RuntimeException("_SERVER['REMOTE_ADDR'] invalid ip");
         }
-
         $ip = $_SERVER['REMOTE_ADDR'];
-
-        if (
-            $this->use_proxy_header &&
-            isset($_SERVER[$this->proxy_header]) &&
-            $this->isTrustedProxy($ip)
-        ) {
+        if (!$this->use_proxy_header) {
+            return $ip;
+        }
+        $name = $this->normalizeHeaderName($this->proxy_header);
+        if (isset($_SERVER[$name]) && $this->isTrustedProxy($ip)) {
             $proxy_ips = explode(
                 ',',
-                $_SERVER[$this->proxy_header]
+                $_SERVER[$name]
             );
-
             foreach ($proxy_ips as $proxy_ip) {
                 $proxy_ip = trim($proxy_ip);
                 if (filter_var($proxy_ip, FILTER_VALIDATE_IP)) {
@@ -110,8 +107,12 @@ readonly class Nginx implements ServerInterface
                 }
             }
         }
-
         return $ip;
+    }
+
+    private function normalizeHeaderName(string $header): string
+    {
+        return 'HTTP_' . strtoupper(str_replace('-', '_', $header));
     }
 
     /**
